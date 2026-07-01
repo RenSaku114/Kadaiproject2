@@ -80,8 +80,9 @@ export default function HackingSequence({ onSequenceComplete }: HackingSequenceP
 
       const typeInterval = setInterval(() => {
         if (charIndex < fullText.length) {
-          setCurrentTypingText((prev) => prev + fullText[charIndex]);
           charIndex++;
+          const currentLength = charIndex;
+          setCurrentTypingText(fullText.slice(0, currentLength));
           // Play tiny typing click sound
           if (charIndex % 2 === 0) playBeep(600, 'triangle', 0.03);
         } else {
@@ -315,8 +316,9 @@ export default function HackingSequence({ onSequenceComplete }: HackingSequenceP
 
       const typeInterval = setInterval(() => {
         if (charIndex < fullText.length) {
-          setMonologueText((prev) => prev + fullText[charIndex]);
           charIndex++;
+          const currentLength = charIndex;
+          setMonologueText(fullText.slice(0, currentLength));
           if (charIndex % 3 === 0) playBeep(180, 'sine', 0.04);
         } else {
           clearInterval(typeInterval);
