@@ -1,6 +1,6 @@
 {
   "name": "Security Escape OS",
   "description": "OS画面一体型の体験型セキュリティホラーゲーム。フィッシング詐欺やアカウント乗っ取りの恐怖を体験しながら、正しいセキュリティリテラシーを学びます。",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

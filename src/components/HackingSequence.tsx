@@ -45,6 +45,49 @@ export default function HackingSequence({ onSequenceComplete }: HackingSequenceP
 
   // Web camera Canvas ref
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [hasCamera, setHasCamera] = useState(false);
+
+  // Camera feed control
+  useEffect(() => {
+    if (phase !== 'webcam_hack') {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      return;
+    }
+
+    let activeStream: MediaStream | null = null;
+    const initCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 }
+        });
+        activeStream = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((e) => console.error("Video play failed:", e));
+          setHasCamera(true);
+        }
+      } catch (err) {
+        console.warn('Camera access denied or unavailable:', err);
+        setHasCamera(false);
+      }
+    };
+
+    initCamera();
+
+    return () => {
+      if (activeStream) {
+        activeStream.getTracks().forEach((track) => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, [phase]);
 
   // Audio mock references: We can play subtle synthesize beeps using Web Audio API!
   // This is a premium game creator skill: using programmatic sound synthesis without needing static audio files!
@@ -161,9 +204,16 @@ export default function HackingSequence({ onSequenceComplete }: HackingSequenceP
       const width = canvas.width;
       const height = canvas.height;
 
-      // Draw background - dark nightvision green
-      ctx.fillStyle = '#021204';
-      ctx.fillRect(0, 0, width, height);
+      // Draw background: camera feed or dark nightvision green
+      if (hasCamera && videoRef.current && videoRef.current.readyState >= 2) {
+        ctx.drawImage(videoRef.current, 0, 0, width, height);
+        // Green CCTV overlay tint
+        ctx.fillStyle = 'rgba(2, 20, 4, 0.45)';
+        ctx.fillRect(0, 0, width, height);
+      } else {
+        ctx.fillStyle = '#021204';
+        ctx.fillRect(0, 0, width, height);
+      }
 
       // Generate CCTV scanlines and noise
       for (let y = 0; y < height; y += 4) {
@@ -184,16 +234,18 @@ export default function HackingSequence({ onSequenceComplete }: HackingSequenceP
       }
       ctx.putImageData(imageData, 0, 0);
 
-      // Draw Room Silhouette (Mock webcam of player's room)
-      ctx.strokeStyle = '#053008';
-      ctx.lineWidth = 3;
-      // Head and shoulder outline in background
-      ctx.beginPath();
-      ctx.arc(width / 2, height / 1.7, 35, 0, Math.PI * 2); // Head
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.ellipse(width / 2, height, 75, 45, 0, Math.PI, 0); // Shoulders
-      ctx.stroke();
+      // Draw Room Silhouette (Mock webcam of player's room) if camera not active
+      if (!hasCamera) {
+        ctx.strokeStyle = '#053008';
+        ctx.lineWidth = 3;
+        // Head and shoulder outline in background
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 1.7, 35, 0, Math.PI * 2); // Head
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(width / 2, height, 75, 45, 0, Math.PI, 0); // Shoulders
+        ctx.stroke();
+      }
 
       // Slidely moving ghost/hacker shadow in the background
       shadowX += 0.4 * shadowDir;
@@ -254,7 +306,7 @@ export default function HackingSequence({ onSequenceComplete }: HackingSequenceP
       cancelAnimationFrame(animationId);
       clearTimeout(webcamTimer);
     };
-  }, [phase]);
+  }, [phase, hasCamera]);
 
   // Phase 4: Ransomware Countdown
   useEffect(() => {
@@ -404,6 +456,13 @@ export default function HackingSequence({ onSequenceComplete }: HackingSequenceP
               <span className="text-red-300">WEBCAM_01_RECOVERY_MODE</span>
             </div>
             <div className="relative p-2 bg-black">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="hidden"
+                style={{ display: 'none' }}
+              />
               <canvas
                 id="webcam-canvas"
                 ref={canvasRef}
